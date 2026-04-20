@@ -1,0 +1,21 @@
+{
+  "zimPath": "zim/",
+  "cacheMaxSize": 200,
+  "cacheTtlMs": 300000,
+  "logFile": "",
+  "corsOrigins": [ "*" ],
+  "trustedProxies": [],
+  "mcp": {
+    "enabled": true,
+    "listen": [ { "host": "127.0.0.1", "port": 8081 } ],
+    "maxConcurrentSearch": 2,
+    "maxConcurrentArticle": 3,
+    "searchResultsPerFile": 2
+  },
+  "web": {
+    "enabled": true,
+    "listen": [ { "host": "127.0.0.1", "port": 8081 } ],
+    "maxConcurrentPage": 4,
+    "searchResultsPerPage": 10
+  }
+}
