@@ -136,8 +136,8 @@ The server exposes 2 tools. Search returns paths in `filename/namespace/entry` f
 
 | Tool | Description |
 |------|-------------|
-| `search` | Full-text search across all `.zim` files. Returns 2 results per file, ordered by relevance, with `sizeBytes`. Use `offset` for pagination. |
-| `article` | Full article content as Markdown. Pass `entryPath` from `search`. |
+| `search` | Full-text search across all `.zim` files. Returns 2 results per file, ordered by relevance, with `sizeBytes`. Use `page` for pagination. |
+| `article` | Full article content as Markdown. Pass `path` from `search`. |
 
 ### Path format
 
@@ -145,7 +145,7 @@ Search results include paths like `wikipedia_en_100.zim/C/Albert_Einstein`. The 
 
 ### Pagination
 
-`search` returns up to 2 results per file per call. If `hasMore` is `true`, call again with a higher `offset` (increments of 2). Results from multiple files are interleaved round-robin.
+`search` returns up to 2 results per file per call. If `hasMore` is `true`, call again with `page + 1`. Results from multiple files are interleaved round-robin.
 
 ## ZIM Files
 
@@ -158,7 +158,7 @@ Download ZIM files from [library.kiwix.org](https://library.kiwix.org) or use th
 npm run build
 
 # Build + test
-npm test
+npm run build && npm run tests
 
 # TypeScript check only
 npx tsc -p tsconfig.json --noEmit
@@ -199,5 +199,5 @@ tests/
 
 ## Requirements
 
-- Node.js 18+
+- Node.js 22+
 - `@openzim/libzim` native bindings (included, pre-built for Linux/macOS/Windows)

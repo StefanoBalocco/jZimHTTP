@@ -1,7 +1,6 @@
 {
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src",
     "target": "esnext",
     "module": "esnext",
     "moduleResolution": "bundler",
@@ -16,7 +15,8 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noImplicitReturns": true,
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+    "types": [ "node" ]
   },
   "include": [
     "src/*.test.ts"

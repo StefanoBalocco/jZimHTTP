@@ -282,7 +282,7 @@ export class Mcp {
 				returnValue = Mcp._successResponse( request.id, {
 					protocolVersion: '2025-03-26',
 					capabilities: { tools: {} },
-					serverInfo: { name: 'jzimhttp', version: '1.0.0' }
+					serverInfo: { name: 'jzimhttp', version: '1.0.1' }
 				} );
 				break;
 			case 'notifications/initialized':
