@@ -2,9 +2,9 @@ import test from 'ava';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
-import { Logger } from '../../dist/logger.js';
-import { Zim } from '../../dist/zim.js';
-import { Mcp } from '../../dist/mcp.js';
+import { Logger } from '../../backend/dist/logger.js';
+import { Zim } from '../../backend/dist/zim.js';
+import { Mcp } from '../../backend/dist/mcp.js';
 Logger.getInstance().stdout = () => { };
 const mcpConfig = {
     enabled: true,

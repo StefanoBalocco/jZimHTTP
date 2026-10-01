@@ -16,7 +16,6 @@ jobs:
                 node-version:
                     - 22
                     - 24
-                    - 26
         steps:
             - name: Checkout repository
               uses: actions/checkout@v7
@@ -38,7 +37,7 @@ jobs:
             - name: Run tests with coverage
               run: npm run tests
             - name: Upload coverage reports to Codecov
-              if: matrix.node-version == 26
+              if: matrix.node-version == 24
               uses: codecov/codecov-action@v7
               with:
                   token: ${{ secrets.CODECOV_TOKEN }}

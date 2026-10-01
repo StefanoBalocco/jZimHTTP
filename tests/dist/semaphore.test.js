@@ -1,5 +1,5 @@
 import test from 'ava';
-import { Semaphore } from '../../dist/semaphore.js';
+import { Semaphore } from '../../backend/dist/semaphore.js';
 test('acquire succeeds immediately when slots available', async (t) => {
     const sem = new Semaphore(2);
     const acquired = await sem.acquire();

@@ -1,5 +1,5 @@
 import test from 'ava';
-import { LruTtlCache } from '../../dist/cache.js';
+import { LruTtlCache } from '../../backend/dist/cache.js';
 
 test( 'Get returns undefined for missing key', t => {
 	const cache = new LruTtlCache<string>( 10, 60000 );

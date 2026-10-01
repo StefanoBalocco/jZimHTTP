@@ -1,0 +1,48 @@
+[
+	{
+		"target": "backend",
+		"prefix": "backend",
+		"tsConfig": "tsconfig.json",
+		"name": "Backend"
+	},
+	{
+		"target": "frontend",
+		"prefix": "frontend",
+		"tsConfig": "tsconfig.json",
+		"name": "Frontend",
+		"templatesJs": [
+			{ "filename": "src/home.tpl", "destination": "frontend/dist", "output": "esm" },
+			{ "filename": "src/search.tpl", "destination": "frontend/dist", "output": "esm" }
+		],
+		"minify": {
+			"files": [ "dist/app.js", "dist/home.mjs", "dist/search.mjs" ],
+			"terser": true,
+			"terserCompanion": true
+		},
+		"copy": [
+			{
+				"destination": "www",
+				"files": [ "dist/app.min.js", "dist/home.min.mjs", "dist/search.min.mjs", "style.css" ],
+				"clean": true
+			}
+		],
+		"templatesHtml": [
+			{
+				"filename": "index.html",
+				"destination": "www",
+				"variables": [
+					{ "name": "hrefStyleCss", "type": "hash-shake256-96", "value": [ "../www/style.css", "/" ] },
+					{ "name": "hrefHomeTemplate", "type": "hash-shake256-96", "value": [ "../www/home.min.mjs", "/" ] },
+					{ "name": "hrefSearchTemplate", "type": "hash-shake256-96", "value": [ "../www/search.min.mjs", "/" ] },
+					{ "name": "hrefAppMinJs", "type": "hash-shake256-96", "value": [ "../www/app.min.js", "/" ] }
+				]
+			}
+		]
+	},
+	{
+		"target": "tests",
+		"prefix": "tests",
+		"tsConfig": "tsconfig.json",
+		"name": "Tests"
+	}
+]

@@ -1,17 +1,22 @@
 {
 	"name": "jzimhttp",
-	"version": "1.0.1",
+	"version": "1.1.0",
 	"description": "HTTP server for ZIM files — browser UI and MCP tools",
 	"type": "module",
-	"main": "dist/main.js",
+	"main": "backend/dist/main.js",
 	"bin": {
-		"jzimhttp": "dist/main.js"
+		"jzimhttp": "backend/dist/main.js"
+	},
+	"engines": {
+		"node": "^22.20.0 || ^24.12.0 || >=26.0.0"
 	},
 	"scripts": {
-		"build": "node build.mjs all",
-		"build:daemon": "node build.mjs daemon",
-		"build:tests": "node build.mjs tests",
-		"tests": "c8 --reporter=text --reporter=lcov ava --verbose"
+		"build": "tsBuild all",
+		"build:backend": "tsBuild backend",
+		"build:frontend": "tsBuild frontend",
+		"build:tests": "tsBuild backend frontend tests",
+		"start": "node backend/dist/main.js",
+		"tests": "c8 --include=backend/src --include=backend/dist --include=frontend/src --include=frontend/dist --exclude-after-remap --per-file --reporter=text --reporter=lcov ava --serial --verbose"
 	},
 	"ava": {
 		"files": [
@@ -20,13 +25,15 @@
 		"timeout": "30s"
 	},
 	"dependencies": {
-		"@hono/node-server": "~1",
-		"@openzim/libzim": "~4",
-		"hono": "~4",
-		"node-html-parser": "~7",
-		"turndown": "~7"
+		"@hono/node-server": "^2.1.0",
+		"@openzim/libzim": "^4",
+		"hono": "^4",
+		"node-html-parser": "^7",
+		"turndown": "^7"
 	},
 	"devDependencies": {
+		"@stefanobalocco/jtdal": "^8",
+		"@stefanobalocco/tsbuild": "^3",
 		"@types/node": "~22",
 		"@types/turndown": "~5",
 		"ava": "~6",

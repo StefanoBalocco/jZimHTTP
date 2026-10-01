@@ -1,7 +1,7 @@
 import test from 'ava';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
-import { Zim } from '../../dist/zim.js';
+import { Zim } from '../../backend/dist/zim.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dataDir = path.resolve(__dirname, '../../tests/data');
 test('ListFiles returns zim files with metadata', async (t) => {

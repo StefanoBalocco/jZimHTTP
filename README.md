@@ -4,7 +4,7 @@ An HTTP daemon that serves ZIM archives through two interfaces: a browser UI for
 
 Drop `.zim` files in a directory, point `jZimHTTP` at it, and read them in any browser or query them from any MCP-capable client.
 
-This project started as a simplified Node.js rewrite of [openzim-mcp](https://github.com/cameronrye/openzim-mcp) that replaced 18 specialized MCP tools with 2 focused ones; the I'll add a web UI for direct browsing.
+This project started as a simplified Node.js rewrite of [openzim-mcp](https://github.com/cameronrye/openzim-mcp) that replaced 18 specialized MCP tools with 2 focused ones, and added a browser UI for direct browsing of the same archives.
 
 ## Installation
 
@@ -65,36 +65,42 @@ Copy and edit `config.json`:
 ## Running
 
 ```bash
-node dist/main.js
+npm start
 # or with a custom config path
-node dist/main.js --config /etc/jzimhttp/config.json
+node backend/dist/main.js --config /etc/jzimhttp/config.json
 ```
+
+The standalone backend serves the generated static frontend from `www/` and the dynamic API and ZIM routes. In production you can let Nginx serve `www/` directly and proxy only the dynamic routes to the backend (see [Nginx](#nginx)).
 
 ## HTTP Endpoints
 
 | Method | Path | Gated by | Description |
 |--------|------|----------|-------------|
 | `POST` | `/mcp` | `mcp.enabled` | JSON-RPC 2.0 — MCP tool calls |
-| `GET` | `/` | `web.enabled` | Static browser UI |
+| `GET` | `/` | `web.enabled` | Static shell — serves generated `www/index.html` |
 | `GET` | `/files` | `web.enabled` | JSON list of ZIM files with metadata |
 | `GET` | `/z/:filename` | `web.enabled` | 302 redirect to the file's main entry |
 | `GET` | `/z/:filename/*` | `web.enabled` | Browse entry (HTML cached, binaries passthrough) |
-| `GET` | `/search/:filename` | `web.enabled` | HTML shell for search results |
+| `GET` | `/search/:filename` | `web.enabled` | Static shell — validates the file, then serves `www/index.html` |
 | `GET` | `/search/:filename/results` | `web.enabled` | JSON search results, paginated via `p` |
 | `OPTIONS` | `*` | always | CORS preflight |
+
+`/` and `/search/:filename` deliver the same generated static shell (`www/index.html`); the browser then fetches `/files` and `/search/:filename/results` as JSON. All other routes are dynamic.
 
 ## Browser caching
 
 Entry pages and binaries receive cache headers:
 
-- `ETag: "filename-date/entry"` — unique per file + entry
+- `ETag` — quoted opaque MD5 base64url validator derived from the filename, archive date, and entry path
 - `Last-Modified` — from ZIM `Date` metadata
 - `Cache-Control: public, max-age=0, must-revalidate` — always revalidate
-- `304 Not Modified` — on `If-None-Match` / `If-Modified-Since` match
+- `304 Not Modified` — on exact `If-None-Match` equality, or on `If-Modified-Since` match when no `If-None-Match` is present
+
+Only exact `If-None-Match` equality is honored; weak comparison, lists, and wildcards are not supported. A present `If-None-Match` always controls the conditional result; `If-Modified-Since` is evaluated only when `If-None-Match` is absent.
 
 ## Search
 
-Every ZIM page served at `/z/:filename/*` includes a search bar that submits to `/search/:filename?q=...`. The results page loads matches from `/search/:filename/results?q=&p=` and paginates according to `web.searchResultsPerPage`. Direct links stay shareable: `q` and `p` live in the URL and a server-side form fallback works without JavaScript.
+Every ZIM page served at `/z/:filename/*` includes a search bar that submits to `/search/:filename?q=...`. The results page loads matches from `/search/:filename/results?q=&p=` and paginates according to `web.searchResultsPerPage`. Direct links stay shareable: `q` and `p` live in the URL, and the static shell renders results in the browser with frontend JavaScript.
 
 Both the web routes and the MCP `search` tool share the same primitive — `Zim.Search( filename, query, offset, limit )` — so pagination, snippet extraction, and the libzim cursor behave identically across interfaces. The MCP layer additionally decorates each hit with `sizeBytes` by fetching the article through its markdown cache.
 
@@ -154,50 +160,82 @@ Download ZIM files from [library.kiwix.org](https://library.kiwix.org) or use th
 ## Development
 
 ```bash
-# Build
-npm run build
+# Build all targets (backend, frontend, tests)
+pnpm run build
 
-# Build + test
-npm run build && npm run tests
+# Build a single target
+pnpm run build:backend   # backend -> backend/dist/
+pnpm run build:frontend  # frontend -> frontend/dist/ + www/
+pnpm run build:tests     # backend + frontend + tests -> backend/dist/, frontend/dist/, www/, tests/dist/
 
-# TypeScript check only
-npx tsc -p tsconfig.json --noEmit
+# Build + run tests with coverage
+pnpm run build && pnpm run tests
 ```
+
+Builds are driven by `tsBuild.json` (targets: `backend`, `frontend`, `tests`). `build:tests` runs the three targets in dependency order (`tsBuild backend frontend tests`) so tests never compile or run against stale `backend/dist`, `frontend/dist`, or `www` artifacts — `frontend.test.ts` imports `frontend/dist/app.js` and reads `www`.
+
+Note: a clean `pnpm install` requires explicit approval of the native `@openzim/libzim` build. The npm workflow under [Installation](#installation) runs `npm install` with ranged dependencies, so it installs the latest matching versions rather than a locked set.
 
 ### Project Structure
 
 ```
-src/
-├── main.ts            # CLI entry point — loads config, starts HTTP server
-├── server.ts          # ZimHttpServer — middleware, routes, multi-listen
-├── types.ts           # TypeScript types, config, tool definitions
-├── zim.ts             # Zim class — ZIM archive access, HTML cache
-├── mcp.ts             # Mcp class — MCP tool dispatch
-├── web.ts             # Web — browser UI, file routes, HTML template rendering
-├── cache.ts           # LruTtlCache — shared cache primitive
-├── semaphore.ts       # Semaphore — concurrency control
-├── logger.ts          # Logger — structured stdout logging
-└── request-logger.ts  # CLF request logger
-tests/
+backend/
+├── src/                 # Backend TypeScript sources
+│   ├── main.ts          # CLI entry point — loads config, starts HTTP server
+│   ├── server.ts        # ZimHttpServer — middleware, routes, multi-listen
+│   ├── types.ts         # TypeScript types, config, tool definitions
+│   ├── zim.ts           # Zim class — ZIM archive access, HTML cache
+│   ├── mcp.ts           # Mcp class — MCP tool dispatch
+│   ├── web.ts           # Web — dynamic routes + static www fallback
+│   ├── cache.ts         # LruTtlCache — shared cache primitive
+│   ├── semaphore.ts     # Semaphore — concurrency control
+│   ├── logger.ts        # Logger — structured stdout logging
+│   └── request-logger.ts# CLF request logger
+└── dist/                # Generated backend output (tracked)
+frontend/
 ├── src/
+│   ├── app.ts           # Browser application (module script)
+│   ├── home.tpl         # jTDAL template source — home file list
+│   └── search.tpl       # jTDAL template source — search results
+├── index.html           # jTDAL HTML shell source
+├── style.css            # Shared frontend stylesheet
+└── dist/                # Generated frontend output (tracked)
+www/                     # Generated static site served by backend and Nginx (tracked)
+tests/
+├── src/                 # AVA test sources
 │   ├── cache.test.ts
+│   ├── frontend.test.ts
 │   ├── mcp.test.ts
 │   ├── request-logger.test.ts
 │   ├── semaphore.test.ts
+│   ├── server.test.ts   # mode-scoped server/CORS integration
 │   ├── web.test.ts
 │   └── zim.test.ts
-└── data/              # ZIM files for integration testing
+├── data/                # ZIM files for integration testing
+└── dist/                # Generated test output (tracked)
 ```
+
+### Frontend
+
+The frontend is compiled from `frontend/src/*.tpl` into self-contained ESM renderer modules, minified, and copied to `www/` together with `app.min.js` and `style.css`. `frontend/index.html` is rendered with SHAKE256-96 content-hash query strings (16-character base64url) so every asset URL is cache-busted. Identical builds emit byte-identical `www/index.html`. The browser reads the generated `data-home-template` / `data-search-template` URLs from the shell and dynamically imports the renderer modules.
+
+`www/`, `backend/dist/`, `frontend/dist/`, and `tests/dist/` are generated and tracked. Never hand-edit files under `www/` — edit the sources in `frontend/` and rebuild.
 
 ### Adding a Tool
 
-1. Add the tool definition to `TOOL_DEFINITIONS` in `src/types.ts`
-2. Add the result interface to `src/types.ts`
-3. Add the method to `Mcp` in `src/mcp.ts`
-4. Add the dispatch case to `Mcp._handleToolCall()` in `src/mcp.ts`
+1. Add the tool definition to `TOOL_DEFINITIONS` in `backend/src/types.ts`
+2. Add the result interface to `backend/src/types.ts`
+3. Add the method to `Mcp` in `backend/src/mcp.ts`
+4. Add the dispatch case to `Mcp._handleToolCall()` in `backend/src/mcp.ts`
 5. Add tests to `tests/src/mcp.test.ts`
+
+## Nginx
+
+In production, Nginx can serve the static frontend directly from `www/` and proxy only the dynamic routes to the backend. See `nginx.conf.example` for a complete configuration. The proxy locations forward `/files`, `/mcp`, `/z/`, and `/search/...` to `http://127.0.0.1:8081` while Nginx serves the static assets with long-lived cache headers.
+
+When Nginx terminates TLS or rewrites the client address, add its IP to `trustedProxies` in `config.json` so the backend resolves the real client IP from `X-Forwarded-For` / `X-Real-IP` for request logging.
 
 ## Requirements
 
-- Node.js 22+
+- Node.js `^22.20.0 || ^24.12.0`
 - `@openzim/libzim` native bindings (included, pre-built for Linux/macOS/Windows)

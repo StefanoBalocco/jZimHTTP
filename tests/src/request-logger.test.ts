@@ -1,5 +1,5 @@
 import test from 'ava';
-import { RequestLogger } from '../../dist/request-logger.js';
+import { RequestLogger } from '../../backend/dist/request-logger.js';
 import { readFileSync, unlinkSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';

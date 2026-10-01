@@ -2,10 +2,10 @@ import test from 'ava';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
-import { Logger } from '../../dist/logger.js';
-import { Zim } from '../../dist/zim.js';
-import { Mcp } from '../../dist/mcp.js';
-import type { McpConfig } from '../../dist/types.js';
+import { Logger } from '../../backend/dist/logger.js';
+import { Zim } from '../../backend/dist/zim.js';
+import { Mcp } from '../../backend/dist/mcp.js';
+import type { McpConfig } from '../../backend/dist/types.js';
 
 // Silence logger output during tests
 Logger.getInstance().stdout = () => {};

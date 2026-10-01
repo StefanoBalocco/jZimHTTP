@@ -1,13 +1,13 @@
 {
   "compilerOptions": {
-    "outDir": "dist",
-    "rootDir": "src",
+    "rootDir": "./src",
+    "outDir": "./dist",
     "target": "esnext",
-    "module": "nodenext",
-    "moduleResolution": "nodenext",
-    "declaration": false,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "declaration": true,
     "removeComments": true,
-    "sourceMap": false,
+    "sourceMap": true,
     "strict": true,
     "noImplicitAny": true,
     "strictNullChecks": true,
@@ -18,9 +18,10 @@
     "noUnusedParameters": true,
     "noImplicitReturns": true,
     "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
     "types": [ "node" ]
   },
   "include": [
-    "src/*.test.ts"
+    "src/*.ts"
   ]
 }

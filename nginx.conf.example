@@ -1,0 +1,97 @@
+# jZimHTTP — example Nginx configuration
+#
+# Serves the generated static frontend directly from www/ and proxies the
+# dynamic API and ZIM routes to the Node backend on 127.0.0.1:8081.
+#
+# The static asset cache headers are safe because every generated asset URL
+# in www/index.html carries its own SHAKE256-96 content-hash query string.
+# Identical builds emit byte-identical www/index.html.
+#
+# Location ordering: exact matches and the ^~ /z/ prefix win by priority;
+# the regex proxy locations are declared before the static-asset regex so
+# /search/... paths are never intercepted by the generic static rules.
+
+server {
+	listen 80;
+	server_name zim.example.com;
+
+	root /var/www/jzimhttp/www;
+	index index.html;
+
+	# Static HTML shell — never cached.
+	location = / {
+		try_files /index.html =404;
+		add_header Cache-Control "no-cache";
+	}
+
+	location = /index.html {
+		try_files /index.html =404;
+		add_header Cache-Control "no-cache";
+	}
+
+	# --- Dynamic routes proxied to the Node backend ---
+
+	# Exact JSON file list.
+	location = /files {
+		proxy_pass http://127.0.0.1:8081;
+		proxy_http_version 1.1;
+		proxy_set_header Host $host;
+		proxy_set_header X-Real-IP $remote_addr;
+		proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+		proxy_set_header X-Forwarded-Proto $scheme;
+	}
+
+	# Exact MCP JSON-RPC endpoint.
+	location = /mcp {
+		proxy_pass http://127.0.0.1:8081;
+		proxy_http_version 1.1;
+		proxy_set_header Host $host;
+		proxy_set_header X-Real-IP $remote_addr;
+		proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+		proxy_set_header X-Forwarded-Proto $scheme;
+	}
+
+	# ZIM entry browsing — streamed, so buffering is disabled.
+	location ^~ /z/ {
+		proxy_pass http://127.0.0.1:8081;
+		proxy_http_version 1.1;
+		proxy_set_header Host $host;
+		proxy_set_header X-Real-IP $remote_addr;
+		proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+		proxy_set_header X-Forwarded-Proto $scheme;
+		proxy_buffering off;
+	}
+
+	# Search results JSON — must be matched before the search shell regex.
+	location ~ ^/search/[^/]+/results$ {
+		proxy_pass http://127.0.0.1:8081;
+		proxy_http_version 1.1;
+		proxy_set_header Host $host;
+		proxy_set_header X-Real-IP $remote_addr;
+		proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+		proxy_set_header X-Forwarded-Proto $scheme;
+	}
+
+	# Search shell — proxied so the backend validates the ZIM file exists.
+	location ~ ^/search/[^/]+$ {
+		proxy_pass http://127.0.0.1:8081;
+		proxy_http_version 1.1;
+		proxy_set_header Host $host;
+		proxy_set_header X-Real-IP $remote_addr;
+		proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+		proxy_set_header X-Forwarded-Proto $scheme;
+	}
+
+	# --- Static assets ---
+
+	# Static assets — immutable because each URL is content-hash-versioned.
+	location ~* \.(js|mjs|css)$ {
+		try_files $uri =404;
+		add_header Cache-Control "public, max-age=31536000, immutable";
+	}
+
+	# General static fallback. No SPA fallback: unknown paths stay 404.
+	location / {
+		try_files $uri =404;
+	}
+}
